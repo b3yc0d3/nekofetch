@@ -1,0 +1,57 @@
+#!/bin/sh
+
+# Customize the URLS like how want
+url_sfw="https://nekos.life/api/v2/img/neko"
+url_nsfw="http://api.nekos.fun:8080/api/hentai" # changed it to nekos.fun, sadly nekos.life removed NSFW stuff
+
+
+# Only changed stuff below this line,
+#  if you know # what you are doing.
+
+tmpfile="$(mktemp -p /tmp nekofetchXXXXXXXX)"
+# '.url' for nekos.life api
+# '.image' for neks.fun api
+pattern=".url"
+
+case "$1" in
+    # Help message
+    "--help")
+        echo "Usage: nekofetch [options]"
+        echo "  Options:"
+        echo "    --help       shows this message"
+        echo "    -s,--sfw     load \"safe for work\" image"
+        echo "    -n,--nsfw    load \"not safe for work\" image"
+
+        exit 0
+        ;;
+    # NSFW
+    "--nsfw"|"nsfw"|"-n"|"n")
+        echo "Getting a nsfw image"
+        imgurl=$url_nsfw
+        pattern=".image"
+        ;;
+    # SFW
+    "--sfw"|"sfw"|"-s"|"s")
+        echo "Getting a sfw image"
+        imgurl=$url_sfw
+        ;;
+    # Default (SFW)
+    *)
+        echo "Getting a sfw image"
+        echo "Could not interpret as either sfw or nsfw. Defaulting to sfw."
+        imgurl=$url_sfw
+        ;;
+esac
+
+url=$(curl -fsSL "$imgurl" | jq -r $pattern) # get response json and extract url from it
+curl -fsSo "$tmpfile.jpg" -L "$url" # download image to tmp folder
+
+# TODO: add überzug support
+if [ "$TERM" = "xterm-kitty" ]; then
+    neofetch --kitty "$tmpfile.jpg"
+else
+    clear
+    neofetch --jp2a "$tmpfile.jpg"  --crop_mode fill
+fi
+
+rm "$tmpfile.jpg"
